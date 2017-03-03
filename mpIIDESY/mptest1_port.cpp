@@ -141,6 +141,19 @@ int main(int argc, char* argv[]) {
 		t.Fill();
 	}
 
+	// Print plane labels, and plane displacements to file
+	for (int i=0; i<Detector::instance()->get_plane_count(); i++) { 
+		true_params_file << 1010 + (2 * (i + 1)) << " " << -Detector::instance()->get_plane_rot_devs()[i] << endl;
+		
+		// Add parameters, with labels, to TTree. Should fitType = 0 denoting true parameter values.
+		true_params.fitType = 0;
+		true_params.paramError = 0;
+		true_params.label = 1010 + (2 * (i + 1));
+		true_params.paramValue = -Detector::instance()->get_plane_rot_devs()[i];
+		t.Fill();
+	}
+
+
 	// Write values to TTree.
 	t.Write();
 
@@ -196,18 +209,31 @@ int main(int argc, char* argv[]) {
 		// Simulate track, and get data
 		LineData generated_line = Detector::instance()->gen_lin();
 
-		// Get local gradient of this track, from recorded hit distances
-		float local_gradient = generated_line.gradient;
-		
+
+		float track_angle = 0.0;
+		if (generated_line.gradient > 0.0) {
+			track_angle = atan(generated_line.gradient);
+		} else {
+			track_angle = -atan(-generated_line.gradient);
+		}
+
+
 		// Iterate over hits in detector
 		for (int j=0; j<generated_line.hit_count; j++) {
 						
+			// Calculate derivative of hit residual with respect to rotation angle
+			float rotation_derivative = generated_line.y_hits[j] * (cos((M_PI / 2.0) - track_angle) / sin((M_PI / 2.0) + track_angle));
+
 			// Create arrays of local and global derivatives.
 			float local_derivs[2] {1.0, generated_line.x_hits[j]};
-			float global_derivs[2] {1.0, generated_line.y_drifts[j]};
+			float global_derivs[2] {generated_line.y_drifts[j], rotation_derivative};
 
-			// Labels for plane displacements, and velcity deviation. 
-			int labels[2] {10 + (2 * (generated_line.i_hits[j] + 1)), 500 + generated_line.i_hits[j] + 1};
+			if (i == 0) {
+				cout << rotation_derivative << " " << generated_line.y_hits[j]  << " " << track_angle << endl;
+			}
+			
+			// Labels for plane displacements, and velocity deviation. 
+			int labels[2] {500 + generated_line.i_hits[j] + 1, 1010 + (2 * (generated_line.i_hits[j] + 1))};
 			
 			// Number of local, global derivatives for use in mille.
 			int local_deriv_count = 2;

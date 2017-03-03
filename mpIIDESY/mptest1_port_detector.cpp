@@ -58,23 +58,41 @@ LineData Detector::gen_lin() {
 
 	line.gradient = gradient;
 	line.y_intercept = y_intercept;
+	
+	// Get local gradient of this track, from recorded hit distances
+	float track_angle = 0.0;
+	if (gradient > 0.0) {
+		track_angle = atan(gradient);
+	} else {
+		track_angle = -atan(-gradient);
+	}
 
 	// Iterate across planes
 	for (int i=0; i<PLANE_COUNT; i++) {
 
 		// Get position of plane
 		float x = PLANE_X_BEGIN + (i * PLANE_X_SEP);
-		//		float x_true = x_recorded - plane_pos_x_devs[i];
 
 		// Check if hit is registered, due to limited plane efficiency.
 		if (RandomBuffer::instance()->get_uniform_number() < true_plane_effs[i]) {
 
 			// Calculate true value of y where line intercects plane, and biased value where hit is recorded, due to plane displacement
 			float y_true = y_intercept + (gradient * x);
-			float y_biased = y_true - plane_pos_y_devs[i];
+			//float y_biased = y_true - plane_pos_y_devs[i];
 
+			float y_rotated = 0.0;
+			if (plane_rot_devs[i] < 0.0) {
+				y_rotated = y_true * (sin((M_PI / 2.0) - track_angle) / sin(plane_rot_devs[i] + track_angle + (M_PI / 2.0)));
+			} else {
+				y_rotated = y_true * (sin((M_PI / 2.0) + track_angle) / sin((M_PI / 2.0) - track_angle - plane_rot_devs[i]));
+			}
+
+			if (i == 0) {
+				cout << "Rotation: " << gradient << " " << plane_rot_devs[i] << " " << y_true << " " << y_rotated << " " << y_rotated - y_true << endl;
+			}
+			 
 			// Calculate number of struck wire. Do not continue simulating this track if it passes outside range of wire values.
-			int wire_num = int(1 + (y_biased / 4));
+			int wire_num = int(1 + (y_true / 4));
 			if (wire_num <=0 || wire_num > 25) break;
 
 			// Record x-position, and plane number, of hit.
@@ -86,13 +104,13 @@ LineData Detector::gen_lin() {
 
 			// Calculate y-position of hit wire, then calculate drift distance.
 			float y_wire = (float) (wire_num * 4.0) - 2.0;
-			line.y_drifts.push_back(y_biased - y_wire);
+			line.y_drifts.push_back(y_rotated - y_wire);
 
 			// Calculate deviation in recorded y position due to drift velocity deviation
 			float y_dvd = line.y_drifts[line.hit_count] * drift_vel_devs[i];
 
 			// Calculate recorded hit y-position, with deviations due to smearing and drift velocity deviation.
-			line.y_hits.push_back(y_biased + y_smear - y_dvd);
+			line.y_hits.push_back(y_rotated + y_smear - y_dvd);
 
 			// Record uncertainty in hit y-position, and increment number of hits.
 			line.hit_sigmas.push_back(true_meas_sigmas[i]);
@@ -119,6 +137,8 @@ void Detector::set_plane_properties() {
 		// Set up random plane position deviations, and velocity deviations
 		plane_pos_y_devs.push_back(DISPL_SIGMA * RandomBuffer::instance()->get_gaussian_number());
 		drift_vel_devs.push_back(DRIFT_SIGMA * RandomBuffer::instance()->get_gaussian_number());
+		plane_rot_devs.push_back(ROTATE_SIGMA * RandomBuffer::instance()->get_gaussian_number());
+		
 	}
 
 	// Set up bad plane with low efficiency, and bad resolution.

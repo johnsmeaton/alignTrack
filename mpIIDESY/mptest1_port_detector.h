@@ -22,6 +22,7 @@
 #include <iostream>
 #include <iomanip>
 #include <stdexcept>
+#include <cmath>
 
 #include "random_buffer.h"
 
@@ -54,7 +55,7 @@ class Detector {
 	// Numbers of planes, tracks
 	const int PLANE_COUNT = 100; /** Number of detector planes */
 	const int TRACK_COUNT = 10000; /** Number of tracks to be simulated passing through detector */
-	
+
 	// Parameters for detector plane properties 
 	const float PLANE_X_BEGIN = 10.0; /** Beginning x-position of detector */
 	const float PLANE_X_SEP = 10.0; /** Separation distance between planes */
@@ -63,14 +64,16 @@ class Detector {
 	const float PLANE_EFF = 0.90; /** Default efficiency of planes (fraction of hits recorded to planes a track passes through) */
 	const float MEAS_SIGMA = 0.0150; /** Default resolution of planes (smearing distance for y-position of hits) */
 
-	const float DISPL_SIGMA = 0.1; /** Standard deviation of plane hit displacement distribution */
+	const float DISPL_SIGMA = 0.1; /** Standard deviation of plane displacement distribution */
 	const float DRIFT_SIGMA = 0.02; /** Standard deviation of plane drift velocity fractional deviation distribution */
+	const float ROTATE_SIGMA = 0.03; /** Standard deviation of plane roatation distribution */ 
 
 	std::vector<float> plane_pos_y_devs; /** Vector of plane position deviations in y-direction */
 	std::vector<float> drift_vel_devs; /** Vector of plane drift velocity fractional deviations */
+	std::vector<float> plane_rot_devs; /** Vector of plane rotations (positive anticlockwise, and negative clockwise) */
 
 	std::vector<float> true_plane_effs; /** Vector of plane efficiencies */
-	std::vector<float> true_meas_sigmas; /** Vector of plane resolutions */
+	std::vector<float> true_meas_sigmas; /** Vector of plane resolutions */	
 
 	// Class constructor and destructor
 	Detector();
@@ -121,12 +124,19 @@ class Detector {
 
 
 	/**
-	   Get the plane position deviations in y-direction from zero for the 
+	   Get the plane position deviations in y-direction for the 
 	   detector planes.
 
 	   @return Vector of plane position deviations.
 	 */
 	std::vector<float> get_plane_pos_y_devs() {return plane_pos_y_devs;}
+
+	/**
+	   Get the plane rotation deviations for the detector planes.
+
+	   @return Vector of plane position deviations.
+	 */
+	std::vector<float> get_plane_rot_devs() {return plane_rot_devs;}
 
 
 };
