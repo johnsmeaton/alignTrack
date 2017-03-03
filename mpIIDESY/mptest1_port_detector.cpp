@@ -86,9 +86,12 @@ LineData Detector::gen_lin() {
 			} else {
 				y_rotated = y_true * (sin((M_PI / 2.0) + track_angle) / sin((M_PI / 2.0) - track_angle - plane_rot_devs[i]));
 			}
+			
 
-			if (i == 0) {
+			if (i == 13) {
 				cout << "Rotation: " << gradient << " " << plane_rot_devs[i] << " " << y_true << " " << y_rotated << " " << y_rotated - y_true << endl;
+
+				Logger::Instance()->write(Logger::INFO, to_string(i) + " " + to_string(plane_rot_devs[i]) + " " + to_string(y_rotated - y_true));
 			}
 			 
 			// Calculate number of struck wire. Do not continue simulating this track if it passes outside range of wire values.

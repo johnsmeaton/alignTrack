@@ -203,12 +203,13 @@ int main(int argc, char* argv[]) {
 	int all_hit_count = 0;
 	int all_record_count = 0;
 
+	Logger::Instance()->LogToFile("rotations.txt");
+
 	// Iterate over number of tracks
 	for (int i=0; i<Detector::instance()->get_track_count(); i++) {
 
 		// Simulate track, and get data
 		LineData generated_line = Detector::instance()->gen_lin();
-
 
 		float track_angle = 0.0;
 		if (generated_line.gradient > 0.0) {
@@ -260,6 +261,8 @@ int main(int argc, char* argv[]) {
 
 		all_record_count++; // Increment total number of records
 	}
+
+	Logger::Instance()->CloseLogFile();
 
 	// Log final information
 	Logger::Instance()->write(Logger::INFO, "");
