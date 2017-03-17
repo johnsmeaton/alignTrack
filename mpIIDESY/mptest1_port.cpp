@@ -109,47 +109,47 @@ int main(int argc, char* argv[]) {
 	TTree t ("paramTree", "Tree to contain true, fitted parameter values");
 
 	// Set up tree branches
-	t.Branch("fitType", &true_params.fitType, "fitType/F");
+	t.Branch("fitType", &true_params.fitType, "fitType/I");
 	t.Branch("label", &true_params.label, "label/I");
 	t.Branch("paramValue", &true_params.paramValue, "paramValue/F");
 	t.Branch("paramError", &true_params.paramError, "paramError/F");
 
 	true_params_file << endl; // Insert blank line
 
+	// // Print plane labels, and plane displacements to file
+	// for (int i=0; i<Detector::instance()->get_plane_count(); i++) { 
+	// 	true_params_file << 10 + (2 * (i + 1)) << " " << -Detector::instance()->get_plane_pos_y_devs()[i] << endl;
+		
+	// 	// Add parameters, with labels, to TTree. Should fitType = 0 denoting true parameter values.
+	// 	true_params.fitType = 0;
+	// 	true_params.paramError = 0;
+	// 	true_params.label = 10 + (2 * (i + 1));
+	// 	true_params.paramValue = -Detector::instance()->get_plane_pos_y_devs()[i];
+	// 	t.Fill();
+	// }
+
+		
+	// // Print drift velocity labels, and drift velocity displacements to file.
+	// for (int i=0; i<Detector::instance()->get_plane_count(); i++) { 
+	// 	true_params_file << 500 + i + 1 << " " << -Detector::instance()->get_drift_vel_devs()[i] << endl; 
+
+	// 	// Add parameters, with labels, to TTree. Should fitType = 0 denoting true parameter values.
+	// 	true_params.fitType = 0;
+	// 	true_params.label = 500 + i + 1;
+	// 	true_params.paramValue = -Detector::instance()->get_drift_vel_devs()[i];
+	// 	true_params.paramError = 0;
+	// 	t.Fill();
+	// }
+
 	// Print plane labels, and plane displacements to file
 	for (int i=0; i<Detector::instance()->get_plane_count(); i++) { 
-		true_params_file << 10 + (2 * (i + 1)) << " " << -Detector::instance()->get_plane_pos_y_devs()[i] << endl;
-		
-		// Add parameters, with labels, to TTree. Should fitType = 0 denoting true parameter values.
-		true_params.fitType = 0;
-		true_params.paramError = 0;
-		true_params.label = 10 + (2 * (i + 1));
-		true_params.paramValue = -Detector::instance()->get_plane_pos_y_devs()[i];
-		t.Fill();
-	}
-
-		
-	// Print drift velocity labels, and drift velocity displacements to file.
-	for (int i=0; i<Detector::instance()->get_plane_count(); i++) { 
-		true_params_file << 500 + i + 1 << " " << -Detector::instance()->get_drift_vel_devs()[i] << endl; 
-
-		// Add parameters, with labels, to TTree. Should fitType = 0 denoting true parameter values.
-		true_params.fitType = 0;
-		true_params.label = 500 + i + 1;
-		true_params.paramValue = -Detector::instance()->get_drift_vel_devs()[i];
-		true_params.paramError = 0;
-		t.Fill();
-	}
-
-	// Print plane labels, and plane displacements to file
-	for (int i=0; i<Detector::instance()->get_plane_count(); i++) { 
-		true_params_file << 1010 + (2 * (i + 1)) << " " << -Detector::instance()->get_plane_rot_devs()[i] << endl;
+		true_params_file << 1010 + (2 * (i + 1)) << " " << Detector::instance()->get_plane_rot_devs()[i] << endl;
 		
 		// Add parameters, with labels, to TTree. Should fitType = 0 denoting true parameter values.
 		true_params.fitType = 0;
 		true_params.paramError = 0;
 		true_params.label = 1010 + (2 * (i + 1));
-		true_params.paramValue = -Detector::instance()->get_plane_rot_devs()[i];
+		true_params.paramValue = Detector::instance()->get_plane_rot_devs()[i];
 		t.Fill();
 	}
 
@@ -211,34 +211,29 @@ int main(int argc, char* argv[]) {
 		// Simulate track, and get data
 		LineData generated_line = Detector::instance()->gen_lin();
 
-		float track_angle = 0.0;
-		if (generated_line.gradient > 0.0) {
-			track_angle = atan(generated_line.gradient);
-		} else {
-			track_angle = -atan(-generated_line.gradient);
-		}
+		float track_angle = atan(generated_line.gradient);
 
 
 		// Iterate over hits in detector
 		for (int j=0; j<generated_line.hit_count; j++) {
 						
 			// Calculate derivative of hit residual with respect to rotation angle
-			float rotation_derivative = generated_line.y_hits[j] * (cos((M_PI / 2.0) - track_angle) / sin((M_PI / 2.0) + track_angle));
+			float rotation_derivative = - generated_line.y_hits[j] * (1.0 / tan(M_PI / 2.0 + track_angle));
 
 			// Create arrays of local and global derivatives.
 			float local_derivs[2] {1.0, generated_line.x_hits[j]};
-			float global_derivs[2] {generated_line.y_drifts[j], rotation_derivative};
+			float global_derivs[1] {rotation_derivative};
 
-			if (i == 0) {
-				cout << rotation_derivative << " " << generated_line.y_hits[j]  << " " << track_angle << endl;
-			}
+			// if (i == 0) {
+			// 	cout << rotation_derivative << " " << generated_line.y_hits[j]  << " " << track_angle << endl;
+			// }
 			
 			// Labels for plane displacements, and velocity deviation. 
-			int labels[2] {500 + generated_line.i_hits[j] + 1, 1010 + (2 * (generated_line.i_hits[j] + 1))};
+			int labels[1] {1010 + (2 * (generated_line.i_hits[j] + 1))};
 			
 			// Number of local, global derivatives for use in mille.
 			int local_deriv_count = 2;
-			int global_deriv_count = 2;
+			int global_deriv_count = 1;
 
 			// Write to binary file.
 			m.mille(local_deriv_count, local_derivs, global_deriv_count, global_derivs, labels, generated_line.y_hits[j], generated_line.hit_sigmas[j]);

@@ -59,13 +59,7 @@ LineData Detector::gen_lin() {
 	line.gradient = gradient;
 	line.y_intercept = y_intercept;
 	
-	// Get local gradient of this track, from recorded hit distances
-	float track_angle = 0.0;
-	if (gradient > 0.0) {
-		track_angle = atan(gradient);
-	} else {
-		track_angle = -atan(-gradient);
-	}
+	float track_angle = atan(gradient);
 
 	// Iterate across planes
 	for (int i=0; i<PLANE_COUNT; i++) {
@@ -80,19 +74,14 @@ LineData Detector::gen_lin() {
 			float y_true = y_intercept + (gradient * x);
 			//float y_biased = y_true - plane_pos_y_devs[i];
 
-			float y_rotated = 0.0;
-			if (plane_rot_devs[i] < 0.0) {
-				y_rotated = y_true * (sin((M_PI / 2.0) - track_angle) / sin(plane_rot_devs[i] + track_angle + (M_PI / 2.0)));
-			} else {
-				y_rotated = y_true * (sin((M_PI / 2.0) + track_angle) / sin((M_PI / 2.0) - track_angle - plane_rot_devs[i]));
-			}
-			
+			float y_rotated = y_true * (sin((M_PI / 2.0) + track_angle) / sin(plane_rot_devs[i] + track_angle + (M_PI / 2.0)));
+						
 
-			if (i == 13) {
-				cout << "Rotation: " << gradient << " " << plane_rot_devs[i] << " " << y_true << " " << y_rotated << " " << y_rotated - y_true << endl;
+			// if (i == 13) {
+			// 	cout << "Rotation: " << gradient << " " << plane_rot_devs[i] << " " << y_true << " " << y_rotated << " " << y_rotated - y_true << endl;
 
-				Logger::Instance()->write(Logger::INFO, to_string(i) + " " + to_string(plane_rot_devs[i]) + " " + to_string(y_rotated - y_true));
-			}
+			// 	Logger::Instance()->write(Logger::INFO, to_string(i) + " " + to_string(plane_rot_devs[i]) + " " + to_string(y_rotated - y_true));
+			// }
 			 
 			// Calculate number of struck wire. Do not continue simulating this track if it passes outside range of wire values.
 			int wire_num = int(1 + (y_true / 4));
@@ -105,15 +94,15 @@ LineData Detector::gen_lin() {
 			// Calculate smear value from detector resolution.			
 			float y_smear = true_meas_sigmas[i] * RandomBuffer::instance()->get_gaussian_number();
 
-			// Calculate y-position of hit wire, then calculate drift distance.
-			float y_wire = (float) (wire_num * 4.0) - 2.0;
-			line.y_drifts.push_back(y_rotated - y_wire);
+			// // Calculate y-position of hit wire, then calculate drift distance.
+			// float y_wire = (float) (wire_num * 4.0) - 2.0;
+			// line.y_drifts.push_back(y_rotated - y_wire);
 
-			// Calculate deviation in recorded y position due to drift velocity deviation
-			float y_dvd = line.y_drifts[line.hit_count] * drift_vel_devs[i];
+			// // Calculate deviation in recorded y position due to drift velocity deviation
+			// float y_dvd = line.y_drifts[line.hit_count] * drift_vel_devs[i];
 
 			// Calculate recorded hit y-position, with deviations due to smearing and drift velocity deviation.
-			line.y_hits.push_back(y_rotated + y_smear - y_dvd);
+			line.y_hits.push_back(y_rotated + y_smear);
 
 			// Record uncertainty in hit y-position, and increment number of hits.
 			line.hit_sigmas.push_back(true_meas_sigmas[i]);
@@ -138,8 +127,8 @@ void Detector::set_plane_properties() {
 		true_meas_sigmas.push_back(MEAS_SIGMA);
 
 		// Set up random plane position deviations, and velocity deviations
-		plane_pos_y_devs.push_back(DISPL_SIGMA * RandomBuffer::instance()->get_gaussian_number());
-		drift_vel_devs.push_back(DRIFT_SIGMA * RandomBuffer::instance()->get_gaussian_number());
+		// plane_pos_y_devs.push_back(DISPL_SIGMA * RandomBuffer::instance()->get_gaussian_number());
+		// drift_vel_devs.push_back(DRIFT_SIGMA * RandomBuffer::instance()->get_gaussian_number());
 		plane_rot_devs.push_back(ROTATE_SIGMA * RandomBuffer::instance()->get_gaussian_number());
 		
 	}
@@ -148,9 +137,9 @@ void Detector::set_plane_properties() {
 	true_plane_effs[6] = 0.1;
 	true_meas_sigmas[6] = 0.0400;
 
-	// Set two planes to have no deviation in position, to constrain fit.
-	plane_pos_y_devs[9] = 0.0;
-	plane_pos_y_devs[89] = 0.0;
+	// // Set two planes to have no deviation in position, to constrain fit.
+	// plane_pos_y_devs[9] = 0.0;
+	// plane_pos_y_devs[89] = 0.0;
 
 }
 
@@ -192,24 +181,24 @@ void Detector::write_constraint_file(ofstream& constraint_file) {
 		// Constrains overall detector y-displacement (in theory)
 		constraint_file << "Constraint 0.0" << endl;
 		for (int i=0; i<PLANE_COUNT; i++) {
-			int labelt = 10 + (i + 1) * 2;
+			int labelt = 1010 + (i + 1) * 2;
 			constraint_file << labelt << " " << fixed << setprecision(7) << 1.0 << endl;
 		}
 
 		
-		// Constains overall detector y-shear (in theory)
-		float d_bar = 0.5 * (PLANE_COUNT - 1) * PLANE_X_SEP; 
-		float x_bar = PLANE_X_BEGIN + (0.5 * (PLANE_COUNT - 1) * PLANE_X_SEP);
-		constraint_file << "Constraint 0.0" << endl;
-		for (int i=0; i<PLANE_COUNT; i++) {
+		// // Constains overall detector y-shear (in theory)
+		// float d_bar = 0.5 * (PLANE_COUNT - 1) * PLANE_X_SEP; 
+		// float x_bar = PLANE_X_BEGIN + (0.5 * (PLANE_COUNT - 1) * PLANE_X_SEP);
+		// constraint_file << "Constraint 0.0" << endl;
+		// for (int i=0; i<PLANE_COUNT; i++) {
 			
-			int labelt = 10 + (i + 1) * 2;
+		// 	int labelt = 1010 + (i + 1) * 2;
 			
-			float x = PLANE_X_BEGIN + (i * PLANE_X_SEP);
-			float ww = (x - x_bar) / d_bar;
+		// 	float x = PLANE_X_BEGIN + (i * PLANE_X_SEP);
+		// 	float ww = (x - x_bar) / d_bar;
 
-			constraint_file << labelt << " " << fixed << setprecision(7) << ww << endl;
-		}	
+		// 	constraint_file << labelt << " " << fixed << setprecision(7) << ww << endl;
+		// }	
 
 	}
 }

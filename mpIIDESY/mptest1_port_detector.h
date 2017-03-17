@@ -66,7 +66,7 @@ class Detector {
 
 	const float DISPL_SIGMA = 0.1; /** Standard deviation of plane displacement distribution */
 	const float DRIFT_SIGMA = 0.02; /** Standard deviation of plane drift velocity fractional deviation distribution */
-	const float ROTATE_SIGMA = 0.03; /** Standard deviation of plane roatation distribution */ 
+	const float ROTATE_SIGMA = 0.002; /** Standard deviation of plane roatation distribution */ 
 
 	std::vector<float> plane_pos_y_devs; /** Vector of plane position deviations in y-direction */
 	std::vector<float> drift_vel_devs; /** Vector of plane drift velocity fractional deviations */
