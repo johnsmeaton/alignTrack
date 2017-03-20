@@ -20,7 +20,7 @@ stdev = []
 irresolvable_prop = []
 
 # Array of plane rotation angles to examine
-plane_rotations = np.linspace(-0.09, 0.09, 50)
+plane_rotations = np.linspace(-0.05, 0.05, 50)
 
 # For sanity plotting
 gradients = []
@@ -66,20 +66,25 @@ for i in plane_rotations:
     min_err.append(np.mean(rotation_residuals) - min(rotation_residuals))
     stdev.append(np.std(rotation_residuals))
 
+lower_tolerance = [-smearing_dist for i in xrange(len(plane_rotations))]
+upper_tolerance = [smearing_dist for i in xrange(len(plane_rotations))]
+
 # Plot hit position residual distributions at different plane rotation angles
-plt.errorbar(plane_rotations, mean_residuals, xerr=0.0, yerr=[min_err, max_err], color='b', fmt='.')
+plt.fill_between(plane_rotations, lower_tolerance, upper_tolerance, color='yellow', alpha=0.5, label="$\\sigma_{smear}$")
+plt.errorbar(plane_rotations, mean_residuals, xerr=0.0, yerr=[min_err, max_err], color='b', fmt='.', label="Hit Position Residuals")
 plt.errorbar(plane_rotations, mean_residuals, xerr=0.0, yerr=stdev, color='b', fmt='.', elinewidth=3)
-plt.title("Residual Distributions Produced by Plane Rotations of Given Angles")
-plt.xlabel("Plane Rotation / radians")
+plt.title("Residual Distributions Produced by Plane \n Rotations of Given Angles")
+plt.xlabel("Plane Rotation $\\alpha$ / rad")
 plt.ylabel("Hit Position Residual")
+plt.legend(loc='best')
 plt.grid()
 plt.show()
 
 # Plot proportion of irresolvable hits 
 plt.plot(plane_rotations, irresolvable_prop, 'b.')
-plt.title("Proportion of Tracks with a Residual Produced by \n Rotation Within $3\sigma_{smear}$ of Zero")
-plt.xlabel("Plane Rotation / radians")
-plt.ylabel("Proportion of Residuals Within $3\sigma$ of Zero")
+plt.title("Proportion of Tracks with a Hit Position Residual Produced by \n Rotation Within $\sigma_{smear}$ of Zero")
+plt.xlabel("Plane Rotation / rad")
+plt.ylabel("Proportion of Residuals Within $\\sigma_{smear}$ of Zero")
 plt.ylim(0, 1.05)
 plt.grid()
 plt.show()
